@@ -14,12 +14,25 @@ window.addEventListener("load", function () {
             this.index = index;
         }
         update(micInput) {
-            this.height = micInput;
+            const sound = micInput * 1000;
+            if (sound > this.height) {
+                this.height = sound;
+            } else {
+                this.height -= this.height * 0.03;
+            }
         }
 
         draw(ctx, volume) {
-            ctx.fillStyle = this.color;
-            ctx.fillRect(this.x, this.y, this.width, this.height);
+            ctx.strokeStyle = this.color;
+            ctx.lineWidth = this.width;
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
+            ctx.rotate(this.index * 0.01);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(this.x, this.y + this.height);
+            ctx.stroke();
+            ctx.restore();
         }
     }
 
@@ -59,24 +72,25 @@ window.addEventListener("load", function () {
             return volume;
         }
     }
-    let fftSize = 2048;
+    let fftSize = 512;
     const microphone = new Microphone(fftSize);
     let bars = [];
-    let barWidth = canvas.width / fftSize / 2;
+    let barWidth = canvas.width / (fftSize / 2);
 
     function createBars() {
         for (let i = 0; i < fftSize / 2; i++) {
-            bars.push(new Bar(i * barWidth, 200, barWidth, 0, "red", i));
+            bars.push(new Bar(i * barWidth, 300, 0.5, 250, "red", i));
         }
     }
 
     createBars();
-    console.log(bars);
 
     function reaction() {
         if (microphone.initialized) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const samples = microphone.getSamples();
             bars.forEach((bar, i) => {
+                bar.update(samples[i]);
                 const volume = microphone.getVolume(i);
                 bar.height = volume * canvas.height;
                 bar.draw(ctx, 1);
