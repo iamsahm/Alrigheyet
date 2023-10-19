@@ -14,7 +14,7 @@ window.addEventListener("load", function () {
             this.index = index;
         }
         update(micInput) {
-            const sound = micInput * 1000;
+            const sound = micInput * 500;
             if (sound > this.height) {
                 this.height = sound;
             } else {
@@ -22,16 +22,29 @@ window.addEventListener("load", function () {
             }
         }
 
-        draw(ctx, volume) {
+        draw(ctx) {
             ctx.strokeStyle = this.color;
             ctx.lineWidth = this.width;
             ctx.save();
-            ctx.translate(canvas.width / 2, canvas.height / 2);
-            ctx.rotate(this.index * 0.01);
+            ctx.rotate(this.index * 0.045);
             ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.lineTo(this.x, this.y + this.height);
+            // ctx.moveTo(0, 0);
+            // ctx.lineTo(this.x, this.y + this.height);
+            ctx.bezierCurveTo(
+                this.x / 2,
+                this.y / 2,
+                this.height * -0.5 + 150,
+                this.height,
+                this.x,
+                this.y
+            );
             ctx.stroke();
+            if (this.index > 100) {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 10, 0, 2 * Math.PI);
+                ctx.fillStyle = this.color;
+                ctx.stroke();
+            }
             ctx.restore();
         }
     }
@@ -78,8 +91,9 @@ window.addEventListener("load", function () {
     let barWidth = canvas.width / (fftSize / 2);
 
     function createBars() {
-        for (let i = 0; i < fftSize / 2; i++) {
-            bars.push(new Bar(i * barWidth, 300, 0.5, 250, "red", i));
+        for (let i = 1; i < fftSize / 2; i++) {
+            let color = "hsl(" + 100 + i * 2 + ", 100%, 50%)";
+            bars.push(new Bar(0, i * 0.5, 1, 250, color, i));
         }
     }
 
@@ -89,12 +103,14 @@ window.addEventListener("load", function () {
         if (microphone.initialized) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             const samples = microphone.getSamples();
+            ctx.save();
+            ctx.translate(canvas.width / 2, canvas.height / 2);
             bars.forEach((bar, i) => {
                 bar.update(samples[i]);
                 const volume = microphone.getVolume(i);
-                bar.height = volume * canvas.height;
                 bar.draw(ctx, 1);
             });
+            ctx.restore();
         }
         requestAnimationFrame(reaction);
     }
